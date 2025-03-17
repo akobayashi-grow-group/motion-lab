@@ -486,6 +486,11 @@ gsap.utils.toArray('.js-fadein').forEach(element => {
       // モーダルとオーバーレイを表示
       modal.style.display = 'block';
       overlay.style.display = 'block';
+      
+      // コピーボタンにフォーカスを当てる
+      setTimeout(() => {
+        copyButton.focus();
+      }, 10);
     }
 
     // ===== イベントリスナー =====
