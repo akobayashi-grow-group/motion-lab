@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スクロールして画面内に入ったら出現（GSAP）</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <style>
+    @import url('https://unpkg.com/destyle.css@4.0.1/destyle.min.css') layer(destyle);
+    @import url('../assets/css/common.css') layer(common);
+
+    @layer destyle, common, base, demo;
+
+
+    @layer demo {
+
+
+      .container {
+        padding: 1rem;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .elements {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+      }
+
+
+      .element {
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        background-color: #ccc;
+        border-radius: 0.5rem;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      /* モーダルウィンドウ用のスタイル */
+      #code-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        display: none;
+      }
+
+      #code-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+        display: none;
+      }
+
+      #code-modal h3 {
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      #code-modal pre {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: monospace;
+        white-space: pre-wrap;
+        margin: 10px 0;
+      }
+
+      .modal-button-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 15px;
+      }
+
+      .modal-copy-button {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+
+      .modal-close-button {
+        background: #888;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      @media screen and (min-width: 1400px) {
+        .tp-dfwv {
+          zoom:1.2
+        }
+
+
+      }
+    }
+
+    @layer base {
+      .spacer {
+        height: 100vh;
+      }
+
+      .spacer-half {
+        height: 50vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <!-- スクロール用のスペーサーを追加 -->
+  <p>右側の操作UIで出現アニメーションを調整できます</p>
+  <div class="spacer-half"></div>
+
+  <p>要素が出現するまで下にスクロールしてください</p>
+  <div class="spacer-half"></div>
+
+  <h1>この下に要素が出現します</h1>
+  <div class="elements">
+    <div class="element js-fadein">設定値に合わせて出現</div>
+    <div class="element js-fadein">設定値に合わせて出現</div>
+    <div class="element js-fadein">設定値に合わせて出現</div>
+    <div class="element js-fadein">設定値に合わせて出現</div>
+    <div class="element js-fadein">設定値に合わせて出現</div>
+    <div class="element js-fadein">設定値に合わせて出現</div>
+  </div>
+
+  <!-- スクロール用のスペーサーを追加 -->
+  <div class="spacer-half"></div>
+</div>
+
+<!-- モーダルウィンドウの構造 -->
+<div id="code-modal-overlay"></div>
+<div id="code-modal">
+  <h3>GSAPアニメーションコード</h3>
+  <pre></pre>
+  <div class="modal-button-container">
+    <button class="modal-copy-button">コピー</button>
+    <button class="modal-close-button">閉じる</button>
+  </div>
+</div>
+
+<script src="../assets/js/utils.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
+
+<script type="module">
+  import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // アニメーションのパラメータ設定（Tweakpaneで制御できるようにオブジェクトとして保持）
+    // デフォルト設定
+    const defaultSettings = {
+      from: {
+        opacity: 0,
+        x: 0,
+        y: 50,
+        scale: 1,
+        rotation: 0,
+        ease: 'power2.out',
+        duration: 0.8,
+        mask: 'unset'
+      },
+      to: {
+        opacity: 1,
+        mask: 'inset(0% 0% 0% 0%)'
+      },
+      scrollTrigger: {
+        start: 'top 80%',
+        // end: 'bottom bottom',
+        toggleActions: 'play none none none'
+      }
+    };
+
+    // ===== Tweakpaneの設定 =====
+    const pane = new Pane({
+      container: document.getElementById('tweakpane-container')
+    });
+
+    //position:fixed
+    pane.containerElem_.style.position = 'fixed';
+
+    // フォルダ作成を整理
+    const folders = {
+      from: pane.addFolder({title: 'From設定'}),
+      duration: pane.addFolder({title: '速度設定'}),
+      scrollTrigger: pane.addFolder({title: 'ScrollTrigger設定'}),
+      apply: pane.addFolder({title: '[反映]クリックでアニメーションが変化します'})
+    };
+
+    // From設定のパラメータ
+    folders.from.addBinding(defaultSettings.from, 'opacity', {min: 0, max: 1, step: 0.1});
+    folders.from.addBinding(defaultSettings.from, 'x', {min: -200, max: 200, step: 1});
+    folders.from.addBinding(defaultSettings.from, 'y', {min: -200, max: 200, step: 1});
+    folders.from.addBinding(defaultSettings.from, 'scale', {min: 0, max: 2, step: 0.1});
+    folders.from.addBinding(defaultSettings.from, 'rotation', {min: -180, max: 180, step: 1});
+
+    folders.from.addBinding(defaultSettings.from, 'mask', {
+      options: {
+        'なし': 'unset',
+        '左から': 'inset(0 100% 0 0)',
+        '右から': 'inset(0 0 0 100%)',
+        '下から': 'inset(100% 0 0 0)',
+        '上から': 'inset(0 0 100% 0)'
+      }
+    });
+
+    // 速度設定のパラメータ
+    folders.duration.addBinding(defaultSettings.from, 'duration', {min: 0, max: 3, step: 0.1});
+    folders.duration.addBinding(defaultSettings.from, 'ease', {
+      options: {
+        '▼ 開始がゆるやか ▼': null,  // これは選択できないタイトル
+        'ゆっくり始まる（sine.in）': 'sine.in',
+        'なめらかに加速（power2.in）': 'power2.in',
+        'より強く加速（power4.in）': 'power4.in',
+        '緩やかに始まり急加速（circ.in）': 'circ.in',
+        '非常に緩やかに始まり急加速（expo.in）': 'expo.in',
+
+        '▼ 終わりがゆるやか ▼': null,  // これは選択できないタイトル
+        'なめらかに減速（sine.out）': 'sine.out',
+        'なめらかに減速（power2.out）': 'power2.out',
+        'より強い減速（power4.out）': 'power4.out',
+        '急激な減速後に緩やか（circ.out）': 'circ.out',
+        '急激な減速（expo.out）': 'expo.out',
+        '少し跳ね返り（back.out）': 'back.out',
+        '弾力のある跳ね返り（elastic.out）': 'elastic.out',
+        'バウンド（bounce.out）': 'bounce.out',
+
+        '▼ 両端が滑らか ▼': null,  // これは選択できないタイトル
+        '両端が滑らか（sine.inOut）': 'sine.inOut',
+        '両端が滑らか（power2.inOut）': 'power2.inOut',
+        'より強い加減速（power4.inOut）': 'power4.inOut',
+        '円運動のような加減速（circ.inOut）': 'circ.inOut',
+        '両端が急激（expo.inOut）': 'expo.inOut',
+      }
+    });
+
+    // ScrollTrigger設定のパラメータ
+    folders.scrollTrigger.addBinding(defaultSettings.scrollTrigger, 'start', {
+      options: {
+        '要素の上端が画面の下端': 'top bottom',
+        '要素の上端が画面の下端から20%': 'top 80%',
+      }
+    });
+
+    folders.scrollTrigger.addBinding(defaultSettings.scrollTrigger, 'toggleActions', {
+      options: {
+        '１回だけ再生': 'play none none none',
+        '上方向に戻ったら消える': 'play none none reverse',
+      }
+    });
+
+    // ボタン設定
+    const applyButton = folders.apply.addButton({
+      title: '反映',
+      label: '設定を適用'
+    });
+
+    //applyFolderのスタイル調整
+    folders.apply.element.style.backgroundColor = 'blue';
+
+    // GSAPアニメーションを保持する配列
+    let animations = [];
+    let scrollTriggers = [];
+
+    // ===== ユーティリティ関数 =====
+
+    // 設定からnullプロパティを除去する関数
+    function cleanProps(props) {
+      const cleaned = {};
+      Object.entries(props).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== 'unset') {
+          cleaned[key] = value;
+        }
+      });
+      return cleaned;
+    }
+
+    // ===== GSAPアニメーション関連 =====
+
+    // GSAPアニメーション初期化関数
+    function initGSAP() {
+      // 既存のアニメーションとスクロールトリガーをクリーンアップ
+      animations.forEach(anim => anim.kill());
+      scrollTriggers.forEach(st => st.kill());
+      animations = [];
+      scrollTriggers = [];
+
+      // GSAPアニメーションを初期化
+      document.querySelectorAll('.js-fadein').forEach(element => {
+        // fromプロパティを準備
+        const fromProps = {
+          opacity: defaultSettings.from.opacity,
+          x: defaultSettings.from.x,
+          y: defaultSettings.from.y,
+          scale: defaultSettings.from.scale,
+          rotation: defaultSettings.from.rotation
+        };
+
+        // maskが設定されている場合のみclipPathを追加
+        if (defaultSettings.from.mask !== 'unset') {
+          fromProps.clipPath = defaultSettings.from.mask;
+        }
+
+        // toプロパティを準備
+        const toProps = {
+          opacity: defaultSettings.to.opacity,
+          x: 0,
+          y: 0,
+          scale: 1,
+          rotation: 0,
+          duration: defaultSettings.from.duration,
+          ease: defaultSettings.from.ease
+        };
+
+        // maskが設定されている場合のみclipPathを追加
+        if (defaultSettings.to.mask !== 'unset') {
+          toProps.clipPath = defaultSettings.to.mask;
+        }
+
+        // スクロールトリガー設定
+        const scrollTriggerConfig = {
+          trigger: element,
+          start: defaultSettings.scrollTrigger.start,
+          toggleActions: defaultSettings.scrollTrigger.toggleActions,
+          markers: {
+            startColor: "green",
+            endColor: "transparent",
+            fontSize: "12px",
+            indent: 10
+          }
+        };
+
+        // アニメーション作成
+        const tl = gsap.timeline({ scrollTrigger: scrollTriggerConfig });
+        tl.fromTo(element, cleanProps(fromProps), cleanProps(toProps));
+
+        // 参照を保持
+        animations.push(tl);
+        scrollTriggers.push(tl.scrollTrigger);
+      });
+    }
+
+    // ===== コード生成関連 =====
+
+    // fromToテンプレート生成
+    function generateFromToTemplate(fromProps, toProps, animationProps) {
+      return `// GSAPでスクロールアニメーションを設定（fromTo）
+gsap.utils.toArray('.js-fadein').forEach(element => {
+  gsap.fromTo(element,
+    {
+      ${fromProps.join(',\n      ')}
+    },
+    {
+      ${toProps.join(',\n      ')},
+      ${animationProps.join(',\n      ')}
+    }
+  );
+});`;
+    }
+
+    // fromテンプレート生成
+    function generateFromTemplate(fromProps, animationProps) {
+      return `// GSAPでスクロールアニメーションを設定（from）
+gsap.utils.toArray('.js-fadein').forEach(element => {
+  gsap.from(element, {
+    ${fromProps.join(',\n    ')},
+    ${animationProps.join(',\n    ')}
+  });
+});`;
+    }
+
+    // GSAP + ScrollTriggerコードを生成する関数
+    function generateGSAPCode(settings) {
+      // アニメーションの種類を判断
+      const needsFromTo =
+        (settings.from.mask !== 'unset' && settings.to.mask !== 'unset') ||
+        (settings.to.opacity !== 1 && settings.to.opacity !== settings.from.opacity);
+
+      // fromの値からコード用の文字列を生成
+      const fromProps = [];
+      if (settings.from.opacity !== 1) fromProps.push(`opacity: ${settings.from.opacity}`);
+      if (settings.from.x !== 0) fromProps.push(`x: ${settings.from.x}`);
+      if (settings.from.y !== 0) fromProps.push(`y: ${settings.from.y}`);
+      if (settings.from.scale !== 1) fromProps.push(`scale: ${settings.from.scale}`);
+      if (settings.from.rotation !== 0) fromProps.push(`rotation: ${settings.from.rotation}`);
+      if (settings.from.mask !== 'unset' && settings.from.mask !== undefined) {
+        fromProps.push(`clipPath: "${settings.from.mask}"`);
+      }
+
+      // toの値からコード用の文字列を生成（fromToの場合のみ）
+      const toProps = [];
+      if (needsFromTo) {
+        toProps.push(`opacity: ${settings.to.opacity}`);
+        if (settings.to.mask !== 'unset' && settings.to.mask !== undefined) {
+          toProps.push(`clipPath: "${settings.to.mask}"`);
+        }
+      }
+
+      // ScrollTrigger設定
+      const scrollTriggerProps = [];
+      scrollTriggerProps.push(`trigger: element`);
+      scrollTriggerProps.push(`start: "${settings.scrollTrigger.start}"`);
+      if (settings.scrollTrigger.end) {
+        scrollTriggerProps.push(`end: "${settings.scrollTrigger.end}"`);
+      }
+      scrollTriggerProps.push(`toggleActions: "${settings.scrollTrigger.toggleActions}"`);
+      scrollTriggerProps.push(`//markers: true`);
+
+      // アニメーション共通のプロパティ
+      const animationProps = [];
+      animationProps.push(`duration: ${settings.from.duration}`);
+      animationProps.push(`ease: "${settings.from.ease}"`);
+
+      // スクロールトリガー設定を追加
+      animationProps.push(`scrollTrigger: {
+        //y軸移動があるときはアニメーションさせる要素と、ScrollTriggerのtriggerは別にした方がいいです
+        ${scrollTriggerProps.join(',\n        ')}
+      }`);
+
+      // 適切なテンプレートを選択して返す
+      return needsFromTo
+        ? generateFromToTemplate(fromProps, toProps, animationProps)
+        : generateFromTemplate(fromProps, animationProps);
+    }
+
+    // コード生成と表示を行う関数
+    function generateAndShowCode(settings) {
+      showCodeModal(generateGSAPCode(settings));
+    }
+
+    // ===== モーダル関連 =====
+
+    // モーダルウィンドウを表示する関数
+    function showCodeModal(codeText) {
+      // 既存のモーダル要素を取得
+      const modal = document.getElementById('code-modal');
+      const overlay = document.getElementById('code-modal-overlay');
+      const pre = modal.querySelector('pre');
+      const copyButton = modal.querySelector('.modal-copy-button');
+      const closeButton = modal.querySelector('.modal-close-button');
+
+      // コードをpre要素に設定
+      pre.textContent = codeText;
+
+      // モーダルを閉じる共通関数
+      const closeModal = () => {
+        modal.style.display = 'none';
+        overlay.style.display = 'none';
+      };
+
+      // コピーボタンのイベントリスナーを設定
+      copyButton.onclick = () => {
+        navigator.clipboard.writeText(codeText);
+        copyButton.textContent = 'コピーしました!';
+        setTimeout(() => {
+          copyButton.textContent = 'コピー';
+        }, 2000);
+      };
+
+      // 閉じるボタンとオーバーレイのイベントリスナーを設定
+      closeButton.onclick = closeModal;
+      overlay.onclick = closeModal;
+
+      // モーダルとオーバーレイを表示
+      modal.style.display = 'block';
+      overlay.style.display = 'block';
+    }
+
+    // ===== イベントリスナー =====
+
+    // ボタンクリック時にGSAPを再初期化
+    applyButton.on('click', initGSAP);
+
+    // コード生成ボタン
+    folders.apply.addButton({
+      title: '📋 コードを生成'
+    }).on('click', () => generateAndShowCode(defaultSettings));
+
+    // 初回のGSAPアニメーション初期化
+    initGSAP();
+
+  });
+</script>
+</body>
+
+</html>

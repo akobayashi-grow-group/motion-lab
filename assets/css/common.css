@@ -1,0 +1,38 @@
+
+body{
+  background: #fcfcfc;
+}
+
+.layout {
+  display: grid;
+  place-items: center;
+  place-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+/* スペーサーを追加して十分なスクロール領域を確保 */
+.spacer {
+  height: 70vh;
+}
+.spacer-half{
+  height: 35vh;
+}
+
+.items{
+  justify-content: center;
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.items + .items{
+  margin-top: 16px;
+}
+
+hr{
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid #ccc;
+}
