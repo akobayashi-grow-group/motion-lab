@@ -210,11 +210,11 @@
     };
 
     // From設定のパラメータ
-    folders.from.addBinding(defaultSettings.from, 'opacity', {min: 0, max: 1, step: 0.1});
-    folders.from.addBinding(defaultSettings.from, 'x', {min: -200, max: 200, step: 1});
-    folders.from.addBinding(defaultSettings.from, 'y', {min: -200, max: 200, step: 1});
-    folders.from.addBinding(defaultSettings.from, 'scale', {min: 0, max: 2, step: 0.1});
-    folders.from.addBinding(defaultSettings.from, 'rotation', {min: -180, max: 180, step: 1});
+    folders.from.addBinding(defaultSettings.from, 'opacity', {min: 0, max: 1, step: 0.2});
+    folders.from.addBinding(defaultSettings.from, 'x', {min: -200, max: 200, step: 2});
+    folders.from.addBinding(defaultSettings.from, 'y', {min: -200, max: 200, step: 2});
+    folders.from.addBinding(defaultSettings.from, 'scale', {min: 0, max: 2, step: 0.2});
+    folders.from.addBinding(defaultSettings.from, 'rotation', {min: -180, max: 180, step: 2});
 
     folders.from.addBinding(defaultSettings.from, 'mask', {
       options: {
@@ -400,10 +400,10 @@ gsap.utils.toArray('.js-fadein').forEach(element => {
 
       // fromの値からコード用の文字列を生成
       const fromProps = [];
-      if (settings.from.opacity !== 1) fromProps.push(`opacity: ${settings.from.opacity}`);
+      if (settings.from.opacity !== 1) fromProps.push(`opacity: ${parseFloat(Number(settings.from.opacity).toFixed(1))}`);
       if (settings.from.x !== 0) fromProps.push(`x: ${settings.from.x}`);
       if (settings.from.y !== 0) fromProps.push(`y: ${settings.from.y}`);
-      if (settings.from.scale !== 1) fromProps.push(`scale: ${settings.from.scale}`);
+      if (settings.from.scale !== 1) fromProps.push(`scale: ${parseFloat(Number(settings.from.scale).toFixed(1))}`);
       if (settings.from.rotation !== 0) fromProps.push(`rotation: ${settings.from.rotation}`);
       if (settings.from.mask !== 'unset' && settings.from.mask !== undefined) {
         fromProps.push(`clipPath: "${settings.from.mask}"`);
@@ -412,7 +412,7 @@ gsap.utils.toArray('.js-fadein').forEach(element => {
       // toの値からコード用の文字列を生成（fromToの場合のみ）
       const toProps = [];
       if (needsFromTo) {
-        toProps.push(`opacity: ${settings.to.opacity}`);
+        toProps.push(`opacity: ${parseFloat(Number(settings.to.opacity).toFixed(1))}`);
         if (settings.to.mask !== 'unset' && settings.to.mask !== undefined) {
           toProps.push(`clipPath: "${settings.to.mask}"`);
         }
@@ -430,7 +430,7 @@ gsap.utils.toArray('.js-fadein').forEach(element => {
 
       // アニメーション共通のプロパティ
       const animationProps = [];
-      animationProps.push(`duration: ${settings.from.duration}`);
+      animationProps.push(`duration: ${parseFloat(Number(settings.from.duration).toFixed(1))}`);
       animationProps.push(`ease: "${settings.from.ease}"`);
 
       // スクロールトリガー設定を追加
